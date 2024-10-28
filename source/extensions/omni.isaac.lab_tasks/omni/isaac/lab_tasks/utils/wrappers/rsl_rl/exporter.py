@@ -137,7 +137,7 @@ class _OnnxPolicyExporter(torch.nn.Module):
                 dynamic_axes={},
             )
         else:
-            obs = torch.zeros(1, self.actor[0].in_features)
+            obs = torch.zeros(1, 16, self.actor.input_linear.in_features)
             torch.onnx.export(
                 self,
                 obs,
