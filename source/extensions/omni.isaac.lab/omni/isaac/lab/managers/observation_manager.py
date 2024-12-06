@@ -92,6 +92,15 @@ class ObservationManager(ManagerBase):
                     )
             else:
                 self._group_obs_dim[group_name] = group_term_dims
+                
+        # Parameters for the observation buffer, and create the buffer variable
+        DT_SIM = self._env.step_dt
+        OBS_TIME_INTERVAL = 0.1
+        self.OBS_BUFFER_FRAMES = 5
+        self.OBS_BUFFER_INTERVAL = int(OBS_TIME_INTERVAL / DT_SIM)
+        self.OBS_BUFFER_LENGTH = self.OBS_BUFFER_INTERVAL * (self.OBS_BUFFER_FRAMES - 1) + 1
+        self.obs_buf = None
+        self.reset_env_indices = None
 
     def __str__(self) -> str:
         """Returns: A string representation for the observation manager."""
@@ -180,6 +189,8 @@ class ObservationManager(ManagerBase):
         # call all modifiers that are classes
         for mod in self._group_obs_class_modifiers:
             mod.reset(env_ids=env_ids)
+        # reset the buffer
+        self.reset_env_indices = env_ids
         # nothing to log here
         return {}
 
@@ -194,13 +205,34 @@ class ObservationManager(ManagerBase):
             The observations are either concatenated into a single tensor or returned as a dictionary
             with keys corresponding to the term's name.
         """
-        # create a buffer for storing obs from all the groups
-        obs_buffer = dict()
-        # iterate over all the terms in each group
-        for group_name in self._group_obs_term_names:
-            obs_buffer[group_name] = self.compute_group(group_name)
-        # otherwise return a dict with observations of all groups
-        return obs_buffer
+        # Customized function: 
+        # 1. extract "policy" and "command" from the observation
+        # 2. manage the "policy" observation in a buffer
+        # 3. extract particular observation from the buffer
+        # 4. concatenate the extracted "policy" observation with the "command" observation and return
+        obs_policy = self.compute_group("policy")
+        obs_command = self.compute_group("command")
+        # # update the buffer. shape: [OBS_BUFFER_LENGTH, num_envs, obs_dim]
+        if self.obs_buf is None:
+            self.obs_buf = obs_policy.unsqueeze(0).repeat(self.OBS_BUFFER_LENGTH, 1, 1).clone()
+        else:
+            self.obs_buf = torch.roll(self.obs_buf, 1, dims=0).clone()
+            self.obs_buf[0] = obs_policy.clone()
+        # Check the environment to reset, and reset the buffer for those environments
+        if self.reset_env_indices is not None:
+            self.obs_buf[:, self.reset_env_indices] = obs_policy[self.reset_env_indices].unsqueeze(0).repeat(self.OBS_BUFFER_LENGTH, 1, 1).clone()
+            self.reset_env_indices = None
+        # extract the observation from the buffer
+        # indices = torch.arange(self.OBS_BUFFER_LENGTH - 1, -1, -self.OBS_BUFFER_INTERVAL)[:self.OBS_BUFFER_FRAMES]
+        indices = torch.arange(0, self.OBS_BUFFER_LENGTH, self.OBS_BUFFER_INTERVAL)[:self.OBS_BUFFER_FRAMES]
+        obs_policy_history = self.obs_buf[indices].transpose(0, 1).reshape(obs_policy.shape[0], -1).clone()
+        # concatenate the observations
+        obs = torch.cat([obs_policy, obs_command], dim=-1)
+        obs_history = torch.cat([obs_policy_history, obs_command], dim=-1)
+        # obs_dict = {"policy": obs, "teacher": obs_history}
+        obs_dict = {"policy": obs_history}
+        return obs_dict
+        
 
     def compute_group(self, group_name: str) -> torch.Tensor | dict[str, torch.Tensor]:
         """Computes the observations for a given group.
