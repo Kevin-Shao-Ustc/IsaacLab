@@ -55,7 +55,7 @@ extract_python_exe() {
     # check if using conda
     if ! [[ -z "${CONDA_PREFIX}" ]]; then
         # use conda python
-        local python_exe=${CONDA_PREFIX}/bin/python
+        local python_exe=${ISAACLAB_PATH}/_isaac_sim/python.sh
     else
         # use kit python
         local python_exe=${ISAACLAB_PATH}/_isaac_sim/python.sh
@@ -328,7 +328,7 @@ while [[ $# -gt 0 ]]; do
             fi
             # run the formatter over the repository
             # check if pre-commit is installed
-            if ! command -v pre-commit &>/dev/null; then
+            if [ ! command -v pre-commit &>/dev/null ]; then
                 echo "[INFO] Installing pre-commit..."
                 pip install pre-commit
             fi
