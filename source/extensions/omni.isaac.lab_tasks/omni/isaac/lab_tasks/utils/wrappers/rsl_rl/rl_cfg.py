@@ -92,9 +92,6 @@ class RslRlDaggerAlgorithmCfg:
     num_learning_epochs: int = MISSING
     """The number of learning epochs per update."""
 
-    num_mini_batches: int = MISSING
-    """The number of mini-batches per update."""
-
     learning_rate: float = MISSING
     """The learning rate for the policy."""
 
@@ -190,6 +187,9 @@ class RslRlDaggerRunnerCfg:
 
     num_steps_per_env: int = MISSING
     """The number of steps per environment per update."""
+    
+    max_buffer_size: int = MISSING
+    """The maximum number of transitions to store."""
 
     max_iterations: int = MISSING
     """The maximum number of iterations."""
