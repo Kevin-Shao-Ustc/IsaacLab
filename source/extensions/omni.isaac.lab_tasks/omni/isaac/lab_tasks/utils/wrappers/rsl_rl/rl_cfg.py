@@ -27,6 +27,16 @@ class RslRlPpoActorCriticCfg:
 
     activation: str = MISSING
     """The activation function for the actor and critic networks."""
+    
+@configclass
+class RslRlDaggerStudentNetworkCfg:
+    """Configuration for the DAGGER student networks."""
+
+    class_name: str = "StudentNetwork"
+    """The policy class name. Default is StudentNetwork."""
+
+    init_noise_std: float = MISSING
+    """The initial noise standard deviation for the policy."""
 
 
 @configclass
@@ -71,6 +81,25 @@ class RslRlPpoAlgorithmCfg:
 
     max_grad_norm: float = MISSING
     """The maximum gradient norm."""
+    
+@configclass
+class RslRlDaggerAlgorithmCfg:
+    """Configuration for the PPO algorithm."""
+
+    class_name: str = "DAGGER"
+    """The algorithm class name. Default is PPO."""
+
+    num_learning_epochs: int = MISSING
+    """The number of learning epochs per update."""
+
+    num_mini_batches: int = MISSING
+    """The number of mini-batches per update."""
+
+    learning_rate: float = MISSING
+    """The learning rate for the policy."""
+
+    schedule: str = MISSING
+    """The learning rate schedule."""
 
 
 @configclass
@@ -94,6 +123,85 @@ class RslRlOnPolicyRunnerCfg:
 
     policy: RslRlPpoActorCriticCfg = MISSING
     """The policy configuration."""
+
+    algorithm: RslRlPpoAlgorithmCfg = MISSING
+    """The algorithm configuration."""
+
+    ##
+    # Checkpointing parameters
+    ##
+
+    save_interval: int = MISSING
+    """The number of iterations between saves."""
+
+    experiment_name: str = MISSING
+    """The experiment name."""
+
+    run_name: str = ""
+    """The run name. Default is empty string.
+
+    The name of the run directory is typically the time-stamp at execution. If the run name is not empty,
+    then it is appended to the run directory's name, i.e. the logging directory's name will become
+    ``{time-stamp}_{run_name}``.
+    """
+
+    ##
+    # Logging parameters
+    ##
+
+    logger: Literal["tensorboard", "neptune", "wandb"] = "tensorboard"
+    """The logger to use. Default is tensorboard."""
+
+    neptune_project: str = "isaaclab"
+    """The neptune project name. Default is "isaaclab"."""
+
+    wandb_project: str = "isaaclab"
+    """The wandb project name. Default is "isaaclab"."""
+
+    ##
+    # Loading parameters
+    ##
+
+    resume: bool = False
+    """Whether to resume. Default is False."""
+
+    load_run: str = ".*"
+    """The run directory to load. Default is ".*" (all).
+
+    If regex expression, the latest (alphabetical order) matching run will be loaded.
+    """
+
+    load_checkpoint: str = "model_.*.pt"
+    """The checkpoint file to load. Default is ``"model_.*.pt"`` (all).
+
+    If regex expression, the latest (alphabetical order) matching file will be loaded.
+    """
+
+
+@configclass
+class RslRlDaggerRunnerCfg:
+    """Configuration of the runner for on-policy algorithms."""
+
+    seed: int = 42
+    """The seed for the experiment. Default is 42."""
+
+    device: str = "cuda:0"
+    """The device for the rl-agent. Default is cuda:0."""
+
+    num_steps_per_env: int = MISSING
+    """The number of steps per environment per update."""
+
+    max_iterations: int = MISSING
+    """The maximum number of iterations."""
+
+    empirical_normalization: bool = MISSING
+    """Whether to use empirical normalization."""
+
+    teacher_policy: RslRlPpoActorCriticCfg = MISSING
+    """The teacher policy configuration."""
+    
+    student_policy: RslRlDaggerStudentNetworkCfg = MISSING
+    """The student policy configuration."""
 
     algorithm: RslRlPpoAlgorithmCfg = MISSING
     """The algorithm configuration."""
