@@ -205,13 +205,41 @@ class ObservationManager(ManagerBase):
             The observations are either concatenated into a single tensor or returned as a dictionary
             with keys corresponding to the term's name.
         """
-        # Customized function: 
-        # 1. extract "policy" and "command" from the observation
-        # 2. manage the "policy" observation in a buffer
-        # 3. extract particular observation from the buffer
-        # 4. concatenate the extracted "policy" observation with the "command" observation and return
-        obs_policy = self.compute_group("policy")
-        obs_command = self.compute_group("command")
+        # get the available observations
+        available_obs = self._group_obs_term_names.keys()
+        # consider different combinations of observations
+        combination_vanilla = ["policy"]
+        combination_teacher = ["policy", "teacher_command"]
+        combination_student = ["policy", "student_command"]
+        combination_teacher_student = ["policy", "teacher_command", "student_command"]
+        # check which combination does the current observation belong to
+        if set(available_obs) == set(combination_vanilla):
+            obs_policy = self.compute_group("policy")
+            return {"policy": obs_policy}
+        elif set(available_obs) == set(combination_teacher):
+            obs_policy = self.compute_group("policy")
+            obs_command = self.compute_group("teacher_command")
+            obs = torch.cat([obs_policy, obs_command], dim=-1)
+            return {"policy": obs}
+        elif set(available_obs) == set(combination_student):
+            obs_policy = self.compute_group("policy")
+            obs_policy_history = self.update_obs_buffer(obs_policy)
+            obs_command = self.compute_group("student_command")
+            obs = torch.cat([obs_policy_history, obs_command], dim=-1)
+            return {"policy": obs}
+        elif set(available_obs) == set(combination_teacher_student):
+            # TODO: separate the policy observation of teacher and student, as teacher policy observation contains priviledged information
+            obs_policy = self.compute_group("policy")
+            obs_policy_history = self.update_obs_buffer(obs_policy)
+            obs_command_teacher = self.compute_group("teacher_command")
+            obs_command_student = self.compute_group("student_command")
+            obs_teacher = torch.cat([obs_policy, obs_command_teacher], dim=-1)
+            obs_student = torch.cat([obs_policy_history, obs_command_student], dim=-1)
+            return {"policy": obs_student, "teacher": obs_teacher}
+        else:
+            raise ValueError(f"Invalid combination of observations: {available_obs}")
+    
+    def update_obs_buffer(self, obs_policy: torch.Tensor) -> torch.Tensor:
         # # update the buffer. shape: [OBS_BUFFER_LENGTH, num_envs, obs_dim]
         if self.obs_buf is None:
             self.obs_buf = obs_policy.unsqueeze(0).repeat(self.OBS_BUFFER_LENGTH, 1, 1).clone()
@@ -223,15 +251,9 @@ class ObservationManager(ManagerBase):
             self.obs_buf[:, self.reset_env_indices] = obs_policy[self.reset_env_indices].unsqueeze(0).repeat(self.OBS_BUFFER_LENGTH, 1, 1).clone()
             self.reset_env_indices = None
         # extract the observation from the buffer
-        # indices = torch.arange(self.OBS_BUFFER_LENGTH - 1, -1, -self.OBS_BUFFER_INTERVAL)[:self.OBS_BUFFER_FRAMES]
         indices = torch.arange(0, self.OBS_BUFFER_LENGTH, self.OBS_BUFFER_INTERVAL)[:self.OBS_BUFFER_FRAMES]
         obs_policy_history = self.obs_buf[indices].transpose(0, 1).reshape(obs_policy.shape[0], -1).clone()
-        # concatenate the observations
-        obs = torch.cat([obs_policy, obs_command], dim=-1)
-        obs_history = torch.cat([obs_policy_history, obs_command], dim=-1)
-        # obs_dict = {"policy": obs, "teacher": obs_history}
-        obs_dict = {"policy": obs_history}
-        return obs_dict
+        return obs_policy_history
         
 
     def compute_group(self, group_name: str) -> torch.Tensor | dict[str, torch.Tensor]:
