@@ -235,7 +235,7 @@ class ObservationManager(ManagerBase):
             obs_command_student = self.compute_group("student_command")
             obs_teacher = torch.cat([obs_policy, obs_command_teacher], dim=-1)
             obs_student = torch.cat([obs_policy_history, obs_command_student], dim=-1)
-            return {"policy": obs_student, "teacher": obs_teacher}
+            return {"policy": obs_student, "latest_state": obs_policy, "teacher": obs_teacher}
         else:
             raise ValueError(f"Invalid combination of observations: {available_obs}")
     
