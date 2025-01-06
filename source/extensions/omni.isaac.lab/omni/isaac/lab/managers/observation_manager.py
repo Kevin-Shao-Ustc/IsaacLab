@@ -96,7 +96,7 @@ class ObservationManager(ManagerBase):
         # Parameters for the observation buffer, and create the buffer variable
         DT_SIM = self._env.step_dt
         OBS_TIME_INTERVAL = 0.1
-        self.OBS_BUFFER_FRAMES = 5
+        self.OBS_BUFFER_FRAMES = 20
         self.OBS_BUFFER_INTERVAL = int(OBS_TIME_INTERVAL / DT_SIM)
         self.OBS_BUFFER_LENGTH = self.OBS_BUFFER_INTERVAL * (self.OBS_BUFFER_FRAMES - 1) + 1
         self.obs_buf = None
