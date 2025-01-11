@@ -212,6 +212,7 @@ class ObservationManager(ManagerBase):
         combination_teacher = ["policy", "teacher_command"]
         combination_student = ["policy", "student_command"]
         combination_teacher_student = ["policy", "teacher_command", "student_command"]
+        combination_teacher_student_vanilla = ["teacher_policy", "policy", "teacher_command", "student_command"]
         # check which combination does the current observation belong to
         if set(available_obs) == set(combination_vanilla):
             obs_policy = self.compute_group("policy")
@@ -236,6 +237,15 @@ class ObservationManager(ManagerBase):
             obs_teacher = torch.cat([obs_policy, obs_command_teacher], dim=-1)
             obs_student = torch.cat([obs_policy_history, obs_command_student], dim=-1)
             return {"policy": obs_student, "latest_state": obs_policy, "teacher": obs_teacher}
+        elif set(available_obs) == set(combination_teacher_student_vanilla):
+            student_obs_policy = self.compute_group("policy")
+            teacher_obs_policy = self.compute_group("teacher_policy")
+            student_obs_policy_history = self.update_obs_buffer(student_obs_policy)
+            student_obs_command = self.compute_group("student_command")
+            teacher_obs_command = self.compute_group("teacher_command")
+            obs_student = torch.cat([student_obs_policy_history, student_obs_command], dim=-1)
+            obs_teacher = torch.cat([teacher_obs_policy, teacher_obs_command], dim=-1)
+            return {"policy": obs_student, "latest_state": student_obs_policy, "teacher": obs_teacher}
         else:
             raise ValueError(f"Invalid combination of observations: {available_obs}")
     
