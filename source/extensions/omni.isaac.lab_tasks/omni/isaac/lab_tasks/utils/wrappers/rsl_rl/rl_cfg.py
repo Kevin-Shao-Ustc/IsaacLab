@@ -82,6 +82,15 @@ class RslRlPpoAlgorithmCfg:
     max_grad_norm: float = MISSING
     """The maximum gradient norm."""
     
+    obs_permutation: list[int] = MISSING
+    """The observation permutation."""
+    
+    act_permutation: list[int] = MISSING
+    """The action permutation."""
+    
+    symmetry_loss_coef: float = MISSING
+    """The coefficient for the symmetry loss."""
+    
 @configclass
 class RslRlDaggerAlgorithmCfg:
     """Configuration for the PPO algorithm."""
