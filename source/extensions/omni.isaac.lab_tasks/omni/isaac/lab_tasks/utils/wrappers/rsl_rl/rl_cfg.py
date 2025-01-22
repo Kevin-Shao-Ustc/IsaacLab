@@ -32,8 +32,8 @@ class RslRlPpoActorCriticCfg:
 class RslRlDaggerStudentNetworkCfg:
     """Configuration for the DAGGER student networks."""
 
-    class_name: str = "StudentNetwork"
-    """The policy class name. Default is StudentNetwork."""
+    class_name: str = "StudentActorCritic"
+    """The policy class name. Default is StudentActorCritic."""
 
     init_noise_std: float = MISSING
     """The initial noise standard deviation for the policy."""
