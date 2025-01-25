@@ -223,11 +223,11 @@ class ObservationManager(ManagerBase):
             obs = torch.cat([obs_policy, obs_command], dim=-1)
             return {"policy": obs}
         elif set(available_obs) == set(combination_student):
-            obs_policy = self.compute_group("policy")
-            obs_policy_history = self.update_obs_buffer(obs_policy)
-            obs_command = self.compute_group("student_command")
-            obs = torch.cat([obs_policy_history, obs_command], dim=-1)
-            return {"policy": obs}
+            student_obs_policy = self.compute_group("policy")
+            student_obs_policy_history = self.update_obs_buffer(student_obs_policy)
+            student_obs_command = self.compute_group("student_command")
+            obs_student = torch.cat([student_obs_policy_history, student_obs_command], dim=-1)
+            return {"policy": obs_student, "latest_state": student_obs_policy}
         elif set(available_obs) == set(combination_teacher_student):
             # TODO: separate the policy observation of teacher and student, as teacher policy observation contains priviledged information
             obs_policy = self.compute_group("policy")
